@@ -1,3 +1,40 @@
 from django.db import models
 
-# Create your models here.
+class Doctor(models.Model):
+    
+    TITEL_CHOICES = [
+        ('DR', 'Dr.'),
+        ('PROF_DR', 'Prof. Dr.'),
+        ('DR_RER_NAT', 'Dr. rer. nat.'),
+    ]
+    
+    SPECIALTY_CHOICES = [
+        ('ALLGEMEIN', 'Allgemeinmedizin'),
+        ('RADIOLOGIE', 'Radiologie'),
+        ('HAUT', 'Hautarzt'),
+        ('KARDIO', 'Kardiologie'),
+        ('NEURO', 'Neurologie'),
+        ('PAEDIA', 'Pädiatrie'),
+        ('UROLOGIE', 'Urologie'),
+    ]
+    
+    name = models.CharField(max_length=255, verbose_name="Name")
+    title = models.CharField(
+        max_length=50,
+        choices=TITEL_CHOICES,
+        default='DR', # Setze einen Standardwert, z.B. 'Dr.'
+        verbose_name="Titel"
+    )
+    specialty = models.CharField(
+        max_length=100,
+        choices=SPECIALTY_CHOICES,
+        default='ALLGEMEIN', # Setze einen Standardwert, z.B. 'Allgemeinmedizin'
+        verbose_name="Spezialität"
+    )
+    class Meta:
+        verbose_name = "Arzt"
+        verbose_name_plural = "Ärzte"
+        ordering = ['name'] # Standardmäßige Sortierung nach Name
+
+    def __str__(self):
+        return f"{self.title} {self.name} ({self.specialty})"
