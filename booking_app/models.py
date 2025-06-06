@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 class Doctor(models.Model):
     
@@ -53,32 +54,13 @@ class Patient(models.Model):
     
     
 class Appointment(models.Model):
-    """
-    Modell für Termine.
-    Ein Termin verbindet einen Patienten mit einem Arzt.
-    """
-    # Fremdschlüsselbeziehung zum Patient-Modell
-    # related_name='appointments' erlaubt den Zugriff auf Termine vom Patient-Objekt (z.B. patient.appointments.all())
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='appointments', verbose_name="Patient")
-
-    # Fremdschlüsselbeziehung zum Doctor-Modell
-    # related_name='appointments' erlaubt den Zugriff auf Termine vom Doctor-Objekt (z.B. doctor.appointments.all())
-    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name='appointments', verbose_name="Arzt")
-
-    # Neue Felder für den Termin
-    title = models.CharField(max_length=255, verbose_name="Titel des Termins")
-    description = models.TextField(blank=True, null=True, verbose_name="Beschreibung")
-    date = models.DateField(verbose_name="Datum des Termins") # DateField für nur das Datum
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Erstellungszeitpunkt") # Wird automatisch beim Erstellen gesetzt
-
-    class Meta:
-        verbose_name = "Termin"
-        verbose_name_plural = "Termine"
-        # 'unique_together' wurde entfernt, da ein Arzt an einem Datum mehrere Termine haben kann.
-        ordering = ['date', 'title'] # Sortierung zuerst nach Datum, dann nach Titel
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='appointments')
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='appointments')
+    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name='appointments')
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    date = models.DateField()
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return (
-            f"Termin '{self.title}' von {self.patient.name} bei {self.doctor.get_title_display()} "
-            f"{self.doctor.name} am {self.date.strftime('%Y-%m-%d')}"
-        )
+        return f"{self.title} – {self.date}"

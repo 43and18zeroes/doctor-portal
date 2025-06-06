@@ -1,4 +1,4 @@
-from rest_framework import generics
+from rest_framework import generics, permissions
 from rest_framework.permissions import AllowAny
 from booking_app.models import Doctor, Patient, Appointment
 from .serializers import DoctorSerializer, PatientSerializer, AppointmentSerializer
@@ -14,10 +14,16 @@ class PatientListCreateView(generics.ListCreateAPIView):
     serializer_class = PatientSerializer
     permission_classes = [AllowAny]
 
+
 class AppointmentListCreateView(generics.ListCreateAPIView):
-    queryset = Appointment.objects.all()
     serializer_class = AppointmentSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Appointment.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 # -- DETAIL (GET, PUT, PATCH, DELETE) --
 class DoctorDetailView(generics.RetrieveUpdateDestroyAPIView):
