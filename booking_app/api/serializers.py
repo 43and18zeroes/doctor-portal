@@ -1,51 +1,20 @@
 from rest_framework import serializers
 from booking_app.models import Doctor, Patient, Appointment
 
+
 class DoctorSerializer(serializers.ModelSerializer):
-    """
-    Serializer für das Doctor-Modell.
-    Konvertiert Doctor-Instanzen in JSON und umgekehrt.
-    Die to_representation-Methode wird überschrieben, um die lesbaren Werte
-    für 'title' und 'specialty' direkt in diesen Feldern auszugeben.
-    Beim POST müssen weiterhin die internen Kurzcodes (z.B. 'DR', 'HAUT') gesendet werden.
-    """
+    title = serializers.SerializerMethodField()
+    specialty = serializers.SerializerMethodField()
+
     class Meta:
         model = Doctor
-        fields = ['id', 'name', 'title', 'specialty'] # Nur diese Felder sind jetzt direkt sichtbar
-        # read_only_fields werden hier nicht benötigt, da to_representation den Output steuert.
+        fields = ['id', 'name', 'title', 'specialty']
 
-    def to_representation(self, instance):
-        """
-        Überschreibt die Standard-Repräsentation, um die lesbaren Werte
-        für 'title' und 'specialty' in der Antwort zu verwenden.
-        Fügt defensive Überprüfungen hinzu, um 'NoneType' Fehler zu vermeiden.
-        """
-        ret = super().to_representation(instance)
+    def get_title(self, obj):
+        return obj.get_title_display()
 
-        # DEBUGGING: Wenn ret None ist, deutet das auf ein tieferliegendes Problem hin.
-        # Normalerweise sollte super().to_representation(instance) immer ein Dictionary zurückgeben.
-        if ret is None:
-            # Hier könntest du eine detailliertere Fehlerbehandlung implementieren,
-            # z.B. das Problem protokollieren oder eine spezifischere Fehlermeldung zurückgeben.
-            # Für jetzt wird ein leeres Dictionary zurückgegeben, um den TypeError zu verhindern.
-            print("DEBUG: super().to_representation(instance) returned None for instance:", instance)
-            return {}
-
-        # Ersetze den internen Code durch den lesbaren Wert
-        # Zusätzliche hasattr-Prüfungen, obwohl models.CharField mit choices dies garantieren sollte.
-        if hasattr(instance, 'get_title_display'):
-            ret['title'] = instance.get_title_display()
-        else:
-            # Fallback, sollte normalerweise nicht erreicht werden
-            ret['title'] = instance.title
-
-        if hasattr(instance, 'get_specialty_display'):
-            ret['specialty'] = instance.get_specialty_display()
-        else:
-            # Fallback, sollte normalerweise nicht erreicht werden
-            ret['specialty'] = instance.specialty
-
-        return ret
+    def get_specialty(self, obj):
+        return obj.get_specialty_display()
 
 
 class PatientSerializer(serializers.ModelSerializer):
