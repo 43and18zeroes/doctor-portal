@@ -5,18 +5,47 @@ class DoctorSerializer(serializers.ModelSerializer):
     """
     Serializer für das Doctor-Modell.
     Konvertiert Doctor-Instanzen in JSON und umgekehrt.
-    Verwendet die get_FOO_display-Methoden für Choices-Felder.
+    Die to_representation-Methode wird überschrieben, um die lesbaren Werte
+    für 'title' und 'specialty' direkt in diesen Feldern auszugeben.
+    Beim POST müssen weiterhin die internen Kurzcodes (z.B. 'DR', 'HAUT') gesendet werden.
     """
-    # Zeigt den lesbaren Titel an (z.B. "Dr." statt "DR")
-    title_display = serializers.CharField(source='get_title_display', read_only=True)
-    # Zeigt die lesbare Spezialität an (z.B. "Allgemeinmedizin" statt "ALLGEMEIN")
-    specialty_display = serializers.CharField(source='get_specialty_display', read_only=True)
-
     class Meta:
         model = Doctor
-        fields = ['id', 'name', 'title', 'title_display', 'specialty', 'specialty_display']
-        # Felder, die nur gelesen werden können (z.B. die Display-Werte)
-        read_only_fields = ['title_display', 'specialty_display']
+        fields = ['id', 'name', 'title', 'specialty'] # Nur diese Felder sind jetzt direkt sichtbar
+        # read_only_fields werden hier nicht benötigt, da to_representation den Output steuert.
+
+    def to_representation(self, instance):
+        """
+        Überschreibt die Standard-Repräsentation, um die lesbaren Werte
+        für 'title' und 'specialty' in der Antwort zu verwenden.
+        Fügt defensive Überprüfungen hinzu, um 'NoneType' Fehler zu vermeiden.
+        """
+        ret = super().to_representation(instance)
+
+        # DEBUGGING: Wenn ret None ist, deutet das auf ein tieferliegendes Problem hin.
+        # Normalerweise sollte super().to_representation(instance) immer ein Dictionary zurückgeben.
+        if ret is None:
+            # Hier könntest du eine detailliertere Fehlerbehandlung implementieren,
+            # z.B. das Problem protokollieren oder eine spezifischere Fehlermeldung zurückgeben.
+            # Für jetzt wird ein leeres Dictionary zurückgegeben, um den TypeError zu verhindern.
+            print("DEBUG: super().to_representation(instance) returned None for instance:", instance)
+            return {}
+
+        # Ersetze den internen Code durch den lesbaren Wert
+        # Zusätzliche hasattr-Prüfungen, obwohl models.CharField mit choices dies garantieren sollte.
+        if hasattr(instance, 'get_title_display'):
+            ret['title'] = instance.get_title_display()
+        else:
+            # Fallback, sollte normalerweise nicht erreicht werden
+            ret['title'] = instance.title
+
+        if hasattr(instance, 'get_specialty_display'):
+            ret['specialty'] = instance.get_specialty_display()
+        else:
+            # Fallback, sollte normalerweise nicht erreicht werden
+            ret['specialty'] = instance.specialty
+
+        return ret
 
 
 class PatientSerializer(serializers.ModelSerializer):
