@@ -18,37 +18,38 @@ class DoctorSerializer(serializers.ModelSerializer):
 
 
 class PatientSerializer(serializers.ModelSerializer):
-    """
-    Serializer für das Patient-Modell.
-    Konvertiert Patient-Instanzen in JSON und umgekehrt.
-    """
     class Meta:
         model = Patient
-        fields = '__all__' # Zeigt alle Felder des Modells an (id, name)
+        fields = ['id', 'name']
 
 
 class AppointmentSerializer(serializers.ModelSerializer):
-    """
-    Serializer für das Appointment-Modell.
-    Zeigt die Namen des Patienten und Arztes anstelle ihrer IDs.
-    """
-    # Fügt den Namen des Patienten hinzu, wird automatisch von der patient-Beziehung geholt
+    doctor_name = serializers.SerializerMethodField()
+    doctor_title = serializers.SerializerMethodField()
+    doctor_specialty = serializers.SerializerMethodField()
     patient_name = serializers.CharField(source='patient.name', read_only=True)
-    # Fügt den vollständigen Namen des Arztes hinzu, wird automatisch von der doctor-Beziehung geholt
-    doctor_full_name = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Appointment
-        fields = ['id', 'patient', 'patient_name', 'doctor', 'doctor_full_name', 'title', 'description', 'date', 'created_at']
-        # 'patient' und 'doctor' sind schreibbar (erwarten IDs bei POST/PUT),
-        # während 'patient_name' und 'doctor_full_name' nur zur Anzeige dienen.
-        read_only_fields = ['patient_name', 'doctor_full_name', 'created_at']
+        fields = [
+            'id',
+            'title',
+            'description',
+            'date',
+            'created_at',
+            'patient',         # gibt ID zurück (z. B. beim POST nötig)
+            'patient_name',    # sprechender Name im GET
+            'doctor',          # gibt ID zurück
+            'doctor_name',
+            'doctor_title',
+            'doctor_specialty',
+        ]
 
-    def get_doctor_full_name(self, obj):
-        """
-        Gibt den vollständigen Namen des Arztes zurück,
-        indem die Display-Werte von Titel und Spezialität verwendet werden.
-        """
-        if obj.doctor:
-            return f"{obj.doctor.get_title_display()} {obj.doctor.name} ({obj.doctor.get_specialty_display()})"
-        return None
+    def get_doctor_name(self, obj):
+        return obj.doctor.name
+
+    def get_doctor_title(self, obj):
+        return obj.doctor.get_title_display()
+
+    def get_doctor_specialty(self, obj):
+        return obj.doctor.get_specialty_display()
